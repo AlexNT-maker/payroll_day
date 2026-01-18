@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Payroll Manager</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="/static/icon/logo.png" alt="Logo" width="135" height="85" class="d-inline-block align-text-top rounded-pill">
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="nav-link btn btn-link active" onclick="switchView('home-view', this)">Μισθοδοσία</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link btn btn-link" onclick="switchView('settings-view', this)">Ρυθμίσεις</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link btn btn-link" onclick="switchView('history-view', this)">Ιστορικό</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>        
+
+    <div class="container">
+
+        <div id="home-view" class="view-section active text-center"> <h2 class="mb-4 border-bottom pb-2">Υπολογισμός Μισθοδοσίας</h2>
+
+            <div class="card p-3 mb-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Από:</label>
+                        <input type="date" id="dateStart" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Έως:</label>
+                        <input type="date" id="dateEnd" class="form-control">
+                    </div>
+
+                    <div class="col-md-3">
+                        <button onclick="loadPayrollData()" class="btn btn-dark w-35">
+                            <i class="bi bi-search"></i> Φόρτωση Λίστας
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover border">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Εργαζόμενος</th>
+                            <th>Ημερομίσθιο (€)</th>
+                            <th>Υπερωρία (€/ώρα)</th>
+                            <th>Μέρες</th>
+                            <th>Ώρες Υπερ.</th>
+                            <th>Σύνολο (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payroll-table-body">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center mt-4 p-3 bg-white border rounded">
+                <h3 class="me-4 text-secondary" id="grand-total">Σύνολο: 0.00 €</h3>
+                <button onclick="calculateTotal()" class="btn btn-success me-2">Υπολογισμός</button>
+                <button onclick="saveAndExport()" class="btn btn-info">Αποθήκευση & PDF</button>
+            </div>
+        </div>
+
+        <div id="settings-view" class="view-section">
+            <h2 class="mb-4 border-bottom pb-2">Ρυθμίσεις Εργαζομένων</h2>
+
+            <div class="row">
+                <div class="col-md-4">
+                    
+                    <div class="card">
+
+                        <div class="card-header bg-primary text-white">Προσθήκη Νέου</div>
+                        <div class="card-body">
+
+                            <div class="mb-3">
+                                <label class="form-label">Ονοματεπώνυμο</label>
+                                <input type="text" id="new-name" class="form-control" placeholder="π.χ. Γιάννης Παππάς">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ημερομίσθιο (€)</label>
+                                <input type="number" id="new-wage" class="form-control" placeholder="50">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Υπερωρία (€/ώρα)</label>
+                                <input type="number" id="new-overtime" class="form-control" placeholder="10">
+                            </div>
+                            <button onclick="addEmployee()" class="btn btn-success w-100">Προσθήκη</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">Λίστα Προσωπικού</div>
+                        <ul id="employees-list" class="list-group list-group-flush">
+                            </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="history-view" class="view-section">
+            <h2 class="mb-4 border-bottom pb-2">Ιστορικό Μισθοδοσιών</h2>
+            <div class="alert alert-info">Δεν υπάρχουν ακόμα εγγραφές.</div>
+            <ul id="history-list" class="list-group"></ul>
+        </div>
+
+    </div>
+
+<script src="{{ url_for('static', filename='script/main.js') }}"></script>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+   
+</div>
+    </body>
+</html>
