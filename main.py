@@ -1,12 +1,24 @@
 import sqlite3
 import os
+import sys
 from flask import Flask, render_template, jsonify, request, send_file
 from flask_cors import CORS
 from fpdf import FPDF
+import webbrowser
+from threading import Timer
 import datetime
 
-# Initialize the flask application
-app = Flask(__name__)
+# --- ΕΙΔΙΚΗ ΡΥΘΜΙΣΗ ΓΙΑ .EXE ---
+if getattr(sys, 'frozen', False):
+    # Αν τρέχει ως .exe, βρες τον φάκελο που αποσυμπιέστηκε
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    # Αν τρέχει κανονικά ως python script
+    app = Flask(__name__)
+
+CORS(app)
 
 # Enable Cross origin resource sharing. 
 CORS(app)
@@ -17,13 +29,13 @@ DB_NAME = "payroll.db"
 # --- PDF CLASS CONFIGURATION ---
 class PDF(FPDF):
     def header(self):
-        self.set_font('Arial', 'B', 14)
+        self.set_font('DejaVu', '', 14)
         self.cell(0, 10, 'Paraponiaris Bros - Payroll Report', 0, 1, 'C')
         self.ln(5)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
+        self.set_font('DejaVu', '', 8)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
 #--- Database helpers ---
@@ -143,80 +155,104 @@ def get_history():
     conn.close()
     return jsonify([dict(ix) for ix in history])
 
+
 @app.route('/api/save_payroll', methods=['POST'])
 def save_payroll():
-    """
-    1. Saves the calculated payroll to the database history.
-    2. Generates a PDF report.
-    3. Sends the PDF back to the user for download.
-    """
-    data = request.json
-    date_start = data.get('date_start')
-    date_end = data.get('date_end')
-    employees = data.get('employees')
-    
-    grand_total = sum(emp['total_pay'] for emp in employees)  # calculate grand total   
+    try:
+        data = request.json
+        date_start = data.get('date_start')
+        date_end = data.get('date_end')
+        employees = data.get('employees')
+        
+        grand_total = sum(emp['total_pay'] for emp in employees)
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    today = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Creates a string summary for the details column
-    details_str = "\n".join([f"{e['name']}: Total {e['total_pay']}€ (Bank: {e['bank_pay']}€ | Cash: {e['cash_pay']}€)" for e in employees])
-    
-    cursor.execute('''
-        INSERT INTO payroll_history (date_created, date_start, date_end, total_cost, details)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (today, date_start, date_end, grand_total, details_str))
-    
-    conn.commit()
-    conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        today = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        details_str = "\n".join([f"{e['name']}: Total {e['total_pay']}€ (Bank: {e['bank_pay']}€ | Cash: {e['cash_pay']}€)" for e in employees])
+        
+        cursor.execute('''
+            INSERT INTO payroll_history (date_created, date_start, date_end, total_cost, details)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (today, date_start, date_end, grand_total, details_str))
+        
+        conn.commit()
+        conn.close()
 
-    # --- Generates PDF ---
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=10)
-    
-    pdf.cell(0, 10, f"Period: {date_start} to {date_end}", 0, 1)
-    pdf.cell(0, 10, f"Created at: {today}", 0, 1)
-    pdf.ln(5)
+        # --- Create PDF ---
+        pdf = PDF()
+        
+        # Font path
+        if getattr(sys, 'frozen', False):
+            base_dir = sys._MEIPASS
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        font_path = os.path.join(base_dir, 'static', 'DejaVuSans.ttf')
 
-    # Table Headers
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(45, 10, "Employee", 1)
-    pdf.cell(15, 10, "Days", 1)
-    pdf.cell(20, 10, "Overtime", 1)
-    pdf.cell(30, 10, "Total", 1)
-    pdf.cell(30, 10, "Bank", 1)  
-    pdf.cell(30, 10, "Cash", 1)  
-    pdf.ln()
+        if not os.path.exists(font_path):
+            raise FileNotFoundError(f"ΤΟ ΑΡΧΕΙΟ ΔΕΝ ΒΡΕΘΗΚΕ ΕΔΩ: {font_path}")
 
-    # Table Rows
-    pdf.set_font("Arial", size=10)
-    for emp in employees:
-        pdf.cell(45, 10, str(emp['name']), 1)
-        pdf.cell(15, 10, str(emp['days']), 1)
-        pdf.cell(20, 10, str(emp['overtime_hours']), 1)
-        pdf.cell(30, 10, f"{emp['total_pay']:.2f}", 1)
-        pdf.cell(30, 10, f"{emp['bank_pay']:.2f}", 1) 
-        pdf.cell(30, 10, f"{emp['cash_pay']:.2f}", 1) 
+        pdf.add_font('DejaVu', '', font_path, uni=True)
+        pdf.add_page()
+        pdf.set_font("DejaVu", size=10)
+        
+        # PDF content
+        pdf.cell(0, 10, f"Period: {date_start} to {date_end}", 0, 1)
+        pdf.cell(0, 10, f"Created at: {today}", 0, 1)
+        pdf.ln(5)
+
+        # Headers
+        pdf.set_font("DejaVu", '', 10)
+        pdf.cell(45, 10, "Employee", 1)
+        pdf.cell(15, 10, "Days", 1)
+        pdf.cell(20, 10, "Overtime", 1)
+        pdf.cell(30, 10, "Total", 1)
+        pdf.cell(30, 10, "Bank", 1)  
+        pdf.cell(30, 10, "Cash", 1)  
         pdf.ln()
 
-    # Grand total
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, f"Grand Total Cost: {grand_total:.2f} EUR", 0, 1, 'R')
+        # Rows
+        pdf.set_font("DejaVu", size=10)
+        for emp in employees:
+            pdf.cell(45, 10, str(emp['name']), 1)
+            pdf.cell(15, 10, str(emp['days']), 1)
+            pdf.cell(20, 10, str(emp['overtime_hours']), 1)
+            pdf.cell(30, 10, f"{emp['total_pay']:.2f}", 1)
+            pdf.cell(30, 10, f"{emp['bank_pay']:.2f}", 1) 
+            pdf.cell(30, 10, f"{emp['cash_pay']:.2f}", 1) 
+            pdf.ln()
 
-   # Save PDF temporarily
-    pdf_filename = f"payroll_{date_start}.pdf"
-    pdf.output(pdf_filename)
+        pdf.ln(5)
+        pdf.set_font("DejaVu", '', 12)
+        pdf.cell(0, 10, f"Grand Total Cost: {grand_total:.2f} EUR", 0, 1, 'R')
 
-    # Save file to user
-    try:
-        return send_file(pdf_filename, as_attachment=True, download_name=pdf_filename)
-    finally:
-        pass
+      
+        filename_only = f"payroll_{date_start}.pdf"
+        full_save_path = os.path.join(os.getcwd(), filename_only)
+        
+        pdf.output(full_save_path)
+
+        return send_file(full_save_path, as_attachment=True, download_name=filename_only)
+
+    except Exception as e:
+        # A text file to write the error
+        with open("error_log.txt", "w", encoding="utf-8") as f:
+            f.write(f"ΣΦΑΛΜΑ: {str(e)}\n")
+            import traceback
+            f.write(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+def open_browser():
+    # Auto webbrowser open for .exe
+    webbrowser.open_new("http://127.0.0.1:5000")
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True, port=5000)
+    
+    # 1 second wait before autostart
+    Timer(1, open_browser).start()
+    
+    
+    app.run(debug=False, port=5000) 
