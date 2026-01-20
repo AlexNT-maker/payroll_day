@@ -65,17 +65,17 @@
             <div class="table-responsive">
                 <table class="table table-striped table-hover border">
                     <thead class="table-dark">
-                        <tr>
-                            <th>Εργαζόμενος</th>
-                            <th>Ημερομίσθιο (€)</th>
-                            <th>Υπερωρία (€/ώρα)</th>
-                            <th>Μέρες</th>
-                            <th>Ώρες Υπερ.</th>
-                            <th>Τράπεζα (€)</th> 
-                            <th>Χέρι (€)</th>    
-                            <th>Σύνολο (€)</th>
-                        </tr>
-                    </thead>
+    <tr>
+        <th>Εργαζόμενος</th>
+        <th>Ημερομίσθιο (€)</th>
+        <th>Υπερωρία (€/ώρα)</th>
+        <th>Μέρες</th>
+        <th>Ώρες Υπερ.</th>
+        <th>Τράπεζα (€)</th>
+        <th>Χέρι (€)</th>
+        <th>Σύνολο (€)</th>
+    </tr>
+</thead>
                     <tbody id="payroll-table-body">
                         </tbody>
                 </table>
@@ -89,7 +89,7 @@
         </div>
 
         <div id="settings-view" class="view-section">
-            <h2 class="mb-4 border-bottom pb-2">Ρυθμίσεις Εργαζομένων</h2>
+            <h2 class="mb-4 border-bottom pb-2 ">Ρυθμίσεις Εργαζομένων</h2>
 
             <div class="row">
                 <div class="col-md-4">
@@ -138,6 +138,42 @@
         </div>
 
     </div>
+
+    <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Επεξεργασία Εργαζομένου</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Ονοματεπώνυμο</label>
+                        <input type="text" id="edit-name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ημερομίσθιο (€)</label>
+                        <input type="number" id="edit-wage" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Σταθερό Ποσό Τράπεζας (€)</label>
+                        <div class="form-text">Αφήστε το κενό ή 0 αν δεν υπάρχει όριο τράπεζας.</div>
+                        <input type="number" id="edit-bank-limit" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Υπερωρία (€/ώρα)</label>
+                        <input type="number" id="edit-overtime" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ακύρωση</button>
+                    <button type="button" onclick="saveEmployeeChanges()" class="btn btn-primary">Αποθήκευση Αλλαγών</button>
+                </div>
+            </div>
+        </div>
+    </div> 
 
 <script src="{{ url_for('static', filename='script/main.js') }}"></script>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
